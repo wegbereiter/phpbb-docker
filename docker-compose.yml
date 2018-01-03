@@ -1,0 +1,28 @@
+version: '2'
+services:
+  mysql:
+    image: mysql:5.6
+    # Debug access:
+    #ports:
+    #  - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=phpbb
+      - MYSQL_USER=phpbb
+      - MYSQL_PASSWORD=DzV,5eMyg!
+      - MYSQL_ROOT_PASSWORD=DzV,5eMyg!
+    # Reduce memory usage with the minimum table definition cache:
+    command: "mysqld --table-definition-cache=400"
+    volumes:
+        - ./data.sql:/docker-entrypoint-initdb.d/data.sql
+  phpbb:
+    image: wegbereiter/phpbb:3.1
+    build: .
+    ports:
+      - "8080:80"
+      - "8081:443"
+    environment:
+      - DBPASSWD=DzV,5eMyg!
+      - AUTO_DB_MIGRATE=true
+      - DBHOST=mysql
+    volumes:
+      - ./store:/var/www/html/store
