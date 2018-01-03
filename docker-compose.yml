@@ -1,28 +1,23 @@
 version: '2'
 services:
-  mysql:
-    image: mysql:5.6
-    # Debug access:
-    #ports:
-    #  - "3306:3306"
+  mariadb:
+    image: bitnami/mariadb:latest
     environment:
-      - MYSQL_DATABASE=phpbb
-      - MYSQL_USER=phpbb
-      - MYSQL_PASSWORD=DzV,5eMyg!
-      - MYSQL_ROOT_PASSWORD=DzV,5eMyg!
-    # Reduce memory usage with the minimum table definition cache:
-    command: "mysqld --table-definition-cache=400"
+      ALLOW_EMPTY_PASSWORD: 'yes'
+      MARIADB_DATABASE: bitnami_phpbb
+      MARIADB_USER: bn_phpbb
     volumes:
-        - ./data.sql:/docker-entrypoint-initdb.d/data.sql
+    - /root/data/wegbereiter/forum/db:/bitnami
   phpbb:
-    image: wegbereiter/phpbb:3.1
-    build: .
-    ports:
-      - "8080:80"
-      - "8081:443"
+    image: wegbereiter/phpbb:latest
     environment:
-      - DBPASSWD=DzV,5eMyg!
-      - AUTO_DB_MIGRATE=true
-      - DBHOST=mysql
+      ALLOW_EMPTY_PASSWORD: 'yes'
+      MARIADB_HOST: mariadb
+      MARIADB_PORT_NUMBER: '3306'
+      PHPBB_DATABASE_NAME: bitnami_phpbb
+      PHPBB_DATABASE_USER: bn_phpbb
     volumes:
-      - ./store:/var/www/html/store
+    - /root/data/wegbereiter/forum/phpbb:/bitnami
+    labels:
+      io.rancher.container.pull_image: always
+      kompose.service.type: nodeport
