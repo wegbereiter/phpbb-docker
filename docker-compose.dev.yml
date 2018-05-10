@@ -1,0 +1,11 @@
+version: '2'
+services:
+  mariadb:
+    volumes:
+      - ./data/db:/bitnami
+  phpbb:
+    volumes:
+      - ./data/phpbb:/bitnami
+    ports:
+      - 80:80
+      - 443:443
