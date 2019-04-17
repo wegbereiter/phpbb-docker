@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: db
+    labels:
+        app.kubernetes.io/name: db
+        helm.sh/chart: {{ include "chart.chart" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+    replicas: {{ .Values.replicaCount }}
+    selector:
+        matchLabels:
+            app.kubernetes.io/name: db
+            app.kubernetes.io/instance: {{ .Release.Name }}
+    template:
+        metadata:
+            labels:
+                app.kubernetes.io/name: db
+                app.kubernetes.io/instance: {{ .Release.Name }}
+            annotations:
+                checksum/config: {{ .Files.Get (print "config/" (include "chart.name" .) ".yaml") | sha256sum }}
+        spec:
+            nodeName: {{ .Values.node }}
+            restartPolicy: Always
+            imagePullSecrets:
+                - name: docker-hub
+            volumes:
+            - name: data
+              hostPath:
+                path: {{ .Values.database.hostPath }}
+                type: ""
+            containers:
+                - name: {{ .Chart.Name }}
+                  image: "{{ .Values.database.repository }}:{{ .Values.database.tag }}"
+                  imagePullPolicy: {{ .Values.database.pullPolicy }}
+                  env:
+                    - name: ALLOW_EMPTY_PASSWORD
+                      value: "yes"
+                    - name: MARIADB_DATABASE
+                      value: bitnami_phpbb
+                    - name: MARIADB_USER
+                      value: bn_phpbb
+                  volumeMounts:
+                      - mountPath: /bitnami
+                        name: data

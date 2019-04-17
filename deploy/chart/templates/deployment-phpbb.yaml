@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: phpbb
+    labels:
+        app.kubernetes.io/name: phpbb
+        helm.sh/chart: {{ include "chart.chart" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+    replicas: {{ .Values.replicaCount }}
+    selector:
+        matchLabels:
+            app.kubernetes.io/name: phpbb
+            app.kubernetes.io/instance: {{ .Release.Name }}
+    template:
+        metadata:
+            labels:
+                app.kubernetes.io/name: phpbb
+                app.kubernetes.io/instance: {{ .Release.Name }}
+            annotations:
+                checksum/config: {{ .Files.Get (print "config/" (include "chart.name" .) ".yaml") | sha256sum }}
+        spec:
+            nodeName: {{ .Values.node }}
+            restartPolicy: Always
+            imagePullSecrets:
+                - name: docker-hub
+            volumes:
+            - name: data
+              hostPath:
+                path: {{ .Values.phpbb.hostPath }}
+                type: ""
+            containers:
+                - name: {{ .Chart.Name }}
+                  image: "{{ .Values.phpbb.repository }}:{{ .Values.phpbb.tag }}"
+                  imagePullPolicy: {{ .Values.phpbb.pullPolicy }}
+                  env:
+                    - name: ALLOW_EMPTY_PASSWORD
+                      value: "yes"
+                    - name: MARIADB_HOST
+                      value: mariadb
+                    - name: MARIADB_PORT_NUMBER
+                      value: "3306"
+                    - name: PHPBB_DATABASE_NAME
+                      value: bitnami_phpbb
+                    - name: PHPBB_DATABASE_USER
+                      value: bn_phpbb
+                    - name: PHPBB_HOST
+                      value: {{ .Values.ingress.host }}
+                  ports:
+                      - name: http
+                        containerPort: 80
+                        protocol: TCP
+                  volumeMounts:
+                      - mountPath: /bitnami
+                        name: data
+                  livenessProbe:
+                      httpGet:
+                          path: /
+                          port: http
+                      failureThreshold: 3
+                      initialDelaySeconds: 60
+                      periodSeconds: 20
+                      successThreshold: 1
+                      timeoutSeconds: 5
+                  readinessProbe:
+                      httpGet:
+                          path: /
+                          port: http
+                      failureThreshold: 3
+                      initialDelaySeconds: 60
+                      periodSeconds: 20
+                      successThreshold: 2
+                      timeoutSeconds: 5
